@@ -221,8 +221,8 @@
 
             try {
                 const [predictResult, explainResult] = await Promise.all([
-                    fetch('http://127.0.0.1:8000/predict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patientData) }).then(res => res.ok ? res.json() : Promise.reject(res.json())),
-                    fetch('http://127.0.0.1:8000/explain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patientData) }).then(res => res.ok ? res.json() : Promise.reject(res.json()))
+                    fetch('https://cpk-akip.onrender.com/predict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patientData) }).then(res => res.ok ? res.json() : Promise.reject(res.json())),
+                    fetch('https://cpk-akip.onrender.com/explain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patientData) }).then(res => res.ok ? res.json() : Promise.reject(res.json()))
                 ]);
                 displayResults(predictResult, explainResult);
             } catch (errorPromise) {
