@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score CPB-AKIP - Calculateur de Risque d'IRA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- MISE À JOUR DE LA POLICE -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f9; /* Un bleu-gris très clair pour le fond */
+        }
+        /* NOUVELLE POLICE POUR LES TITRES */
+        .font-title {
+            font-family: 'Montserrat', sans-serif;
+        }
+        .details-marker {
+            transition: transform 0.3s ease;
+        }
+        details[open] .details-marker {
+            transform: rotate(90deg);
+        }
+        .form-input, .form-select {
+            background-color: #fdfdff;
+            border-color: #e2e8f0; /* slate-200 */
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input:focus, .form-select:focus {
+            --tw-ring-color: #2563eb; /* blue-600 */
+            border-color: #2563eb;
+            box-shadow: 0 0 0 1px #2563eb;
+        }
+        .form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .loader {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #riskDialContainer {
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+        #riskDialText {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-5xl md:text-6xl font-title font-bold text-slate-900 tracking-tight">Score CPB-AKIP</h1>
+            <p class="mt-4 text-lg text-slate-600">Calculateur de risque d'insuffisance rénale aiguë après chirurgie cardiaque sous CEC</p>
+        </header>
+
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl shadow-slate-200/50">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                
+                <!-- Colonne du Formulaire -->
+                <div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <svg class="h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                        </svg>
+                        <h2 class="text-3xl font-title font-bold text-slate-800">Paramètres du Patient</h2>
+                    </div>
+                    <div id="patient-form-container" class="space-y-4"></div>
+                </div>
+
+                <!-- Colonne des Résultats -->
+                <div class="sticky top-8 self-start">
+                     <div class="flex items-center gap-3 mb-6">
+                        <svg class="h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 100 15 7.5 7.5 0 000-15z" />
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197" />
+                        </svg>
+                        <h2 class="text-3xl font-title font-bold text-slate-800">Analyse du Risque</h2>
+                    </div>
+                    
+                    <div id="result-dashboard" class="space-y-6 hidden">
+                        <!-- Résultat Binaire -->
+                        <div id="binary-result-card" class="p-6 rounded-xl text-center transition-all duration-300">
+                            <p class="text-lg font-medium" id="binary-result-title">IRA Prédite</p>
+                            <p id="binary-result-text" class="text-7xl font-bold"></p>
+                        </div>
+
+                        <!-- Contexte Clinique -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-center">
+                            <h3 class="font-semibold text-slate-800">Interprétation & Recommandation</h3>
+                            <p id="clinical-context-text" class="mt-2 text-slate-600 text-sm"></p>
+                        </div>
+                        
+                        <!-- Cadran de Probabilité -->
+                        <div class="pt-6 border-t border-slate-200">
+                             <h3 class="text-lg font-semibold text-slate-800 text-center">Probabilité de Risque Détaillée</h3>
+                             <div id="riskDialContainer">
+                                <canvas id="riskDial"></canvas>
+                                <div id="riskDialText">
+                                    <span id="riskPercentage" class="text-5xl font-bold">0.0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Graphique SHAP -->
+                        <div class="pt-6 border-t border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-800">Facteurs d'Influence (Waterfall)</h3>
+                            <p class="text-sm text-slate-500 mb-3">Comment chaque facteur a contribué au score final</p>
+                            <div class="w-full h-96"><canvas id="shapChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div id="loader-container" class="flex flex-col items-center justify-center py-24 text-slate-500 hidden"><div class="loader"></div><p class="mt-4 font-medium">Calcul en cours...</p></div>
+                    <div id="welcome-message" class="flex flex-col items-center justify-center py-24 text-slate-500 text-center">
+                        <svg class="h-16 w-16 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        <p class="mt-4 font-medium">Les résultats de la prédiction<br>apparaîtront ici.</p>
+                    </div>
+                    <div id="error-message" class="mt-4 text-center text-red-600 font-semibold hidden"></div>
+                </div>
+
+            </div>
+            
+            <!-- Actions -->
+            <div class="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <button id="save-btn" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition flex items-center gap-2">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                        Sauvegarder
+                    </button>
+                    <span class="text-slate-300">|</span>
+                    <label for="load-input" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition cursor-pointer flex items-center gap-2">
+                         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                        Charger
+                    </label>
+                    <input type="file" id="load-input" class="hidden" accept=".json">
+                </div>
+                <div class="flex gap-4">
+                    <button id="reset-btn" class="w-full sm:w-auto text-slate-700 bg-slate-200 hover:bg-slate-300 font-semibold rounded-lg text-base py-3 px-6 transition-all flex items-center gap-2">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.181-3.183m-4.991-2.696a8.25 8.25 0 00-11.664 0l-3.181 3.183" /></svg>
+                        Réinitialiser
+                    </button>
+                    <button id="calculate-btn" class="w-full sm:w-auto text-white bg-blue-600 hover:bg-blue-700 font-semibold rounded-lg text-base py-3 px-10 transition-all transform hover:scale-105 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center gap-2">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                        Calculer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-10 pt-6 border-t border-slate-200">
+            <p class="text-xs text-slate-500">
+                Cette application a été développée par l'équipe du département d'anesthésie-réanimation de l'hôpital militaire principal d'instruction de Tunis.
+            </p>
+        </footer>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Le code JavaScript reste identique à la version précédente ---
+        const formContainer = document.getElementById('patient-form-container');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const loadInput = document.getElementById('load-input');
+        const resultDashboard = document.getElementById('result-dashboard');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const loaderContainer = document.getElementById('loader-container');
+        const errorMessage = document.getElementById('error-message');
+        const riskPercentage = document.getElementById('riskPercentage');
+        const binaryResultCard = document.getElementById('binary-result-card');
+        const binaryResultText = document.getElementById('binary-result-text');
+        const binaryResultTitle = document.getElementById('binary-result-title');
+        const clinicalContextText = document.getElementById('clinical-context-text');
+        
+        const formConfig = { "Antécédents du Patient": [ { id: "Age", label: "Âge", type: "number", value: 65 }, { id: "Sexe", label: "Sexe", type: "select", options: { "1": "Homme", "2": "Femme" } }, { id: "IMC", label: "IMC (kg/m²)", type: "number", value: 27 }, { id: "Diabète", label: "Diabète", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "HTA", label: "HTA", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "IRC", label: "Insuffisance Rénale Chronique", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "SCA_pré", label: "Syndrome coronarien aigu", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "AVC_pré", label: "Accident vasculaire cérébral", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "BPCO", label: "BPCO", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "IH", label: "Insuffisance hépatique", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "Tabagisme", label: "Tabagisme", type: "select", options: { "0": "Non", "1": "Oui" } } ], "Évaluation Biologique Préopératoire": [ { id: "Créat_pré", label: "Créatinine préopératoire (μmol/L)", type: "number", value: "" }, { id: "Clairance_pré", label: "Clairance de la créatinine indexée préopératoire (ml/min/1,73m²)", type: "number", value: "" }, { id: "Hb_pré", label: "Hémoglobine préopératoire (g/dL)", type: "number", value: "" }, { id: "Ht_pré", label: "Hématocrite préopératoire (%)", type: "number", value: "" } ], "Évaluation Cardiaque Préopératoire": [ { id: "NYHA", label: "Classe NYHA", type: "select", options: { "1": "I", "2": "II", "3": "III", "4": "IV" } }, { id: "ASA", label: "Classe ASA", type: "select", options: { "1": "I", "2": "II", "3": "III", "4": "IV", "5": "V" } }, { id: "Euroscore", label: "Euroscore II", type: "number", value: "", step: 0.1 } ], "Échocardiographie Préopératoire": [ { id: "FEVG_pré", label: "FEVG préopératoire (%)", type: "number", value: "" }, { id: "PAPS_pré", label: "PAPS préopératoire (mmHg)", type: "number", value: "" } ], "Détails de l'Intervention": [ { id: "Chir", label: "Type de chirurgie", type: "select", options: { "1": "PAC", "2": "RVA", "3": "RVM", "4": "Anneau mitral", "5": "Plastie mitrale", "6": "Anneau tricuspide", "7": "RVT", "8": "Bentall", "9": "Tirone David", "10": "Tube aortique", "11": "Congénital", "12": "Tumeur cardiaque", "13": "Combinée 1 procédure hors PAC", "14": "Combinée 2 procédures", "15": "Combinée 3 procédures", "16": "Autre" } }, { id: "Urg", label: "Degré d'urgence", type: "select", options: { "0": "Programmée", "1": "Urgente" } }, { id: "Redux", label: "Redux", type: "select", options: { "0": "Non", "1": "Oui" } }, { id: "Durée_CEC", label: "Durée de CEC (min)", type: "number", value: "" }, { id: "Durée_clamp", label: "Durée de clampage aortique (min)", type: "number", value: "" } ], "Paramètres Peropératoires": [ { id: "PAM_CEC", label: "PAM moyenne par CEC (mmHg)", type: "number", value: "" } ], "Fin d'Intervention et Admission en Réanimation": [ { id: "Lac_fin", label: "Lactates fin de CEC (mmol/L)", type: "number", value: "", step: 0.1 }, { id: "pH_0", label: "pH à l'admission en réanimation", type: "number", value: "", step: 0.01 }, { id: "Ht_0", label: "Hématocrite à l'admission en réanimation (%)", type: "number", value: "" }, { id: "NAD_fin", label: "Noradrénaline fin de CEC (mg/h)", type: "number", value: "", step: 0.01 }, { id: "Dobu_fin", label: "Dobutamine fin de CEC (gamma/kg/min)", type: "number", value: "", step: 0.1 } ], "Transfusion Sanguine Peropératoire": [ { id: "CGR_per", label: "Nombre de CGR transfusés en peropératoire", type: "number", value: "" }, { id: "PFC_per", label: "Nombre de PFC transfusés en peropératoire", type: "number", value: "" }, { id: "CPS_per", label: "Nombre de CPS/CUP transfusés en peropératoire", type: "number", value: "" } ] };
+
+        let shapChartInstance = null;
+        let riskDialInstance = null;
+        const featureLabelMap = {};
+        for (const group in formConfig) { formConfig[group].forEach(field => { featureLabelMap[field.id] = field.label; }); }
+
+        function createForm() { for (const groupName in formConfig) { const details = document.createElement('details'); details.className = "border border-slate-200 rounded-lg overflow-hidden"; details.open = groupName.startsWith("Antécédents"); const summary = document.createElement('summary'); summary.className = "p-3 bg-slate-50 font-medium cursor-pointer flex justify-between items-center hover:bg-slate-100"; summary.innerHTML = `<span>${groupName}</span><svg class="details-marker w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`; details.appendChild(summary); const groupContainer = document.createElement('div'); groupContainer.className = "p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4"; formConfig[groupName].forEach(field => { const fieldWrapper = document.createElement('div'); const label = document.createElement('label'); label.htmlFor = field.id; label.className = "block text-sm font-medium text-slate-700 mb-1"; label.textContent = field.label; fieldWrapper.appendChild(label); if (field.type === 'select') { const select = document.createElement('select'); select.id = field.id; select.className = "w-full p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 form-select"; for (const value in field.options) { const option = document.createElement('option'); option.value = value; option.textContent = field.options[value]; select.appendChild(option); } fieldWrapper.appendChild(select); } else { const input = document.createElement('input'); input.type = "number"; input.id = field.id; input.step = field.step || 1; input.placeholder = field.value || '...'; input.className = "w-full p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 form-input"; fieldWrapper.appendChild(input); } groupContainer.appendChild(fieldWrapper); }); details.appendChild(groupContainer); formContainer.appendChild(details); } }
+        function getFormData() { const data = {}; for (const group in formConfig) { formConfig[group].forEach(field => { const element = document.getElementById(field.id); if (element.value.trim() === '') { data[field.id] = null; } else { data[field.id] = parseFloat(element.value); } }); } return data; }
+        function resetForm() { formContainer.querySelectorAll('input, select').forEach(el => { if(el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; }); resultDashboard.classList.add('hidden'); welcomeMessage.classList.remove('hidden'); errorMessage.classList.add('hidden'); }
+        function saveCase() { const data = getFormData(); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `patient_case_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(a.href); }
+        function loadCase(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); resetForm(); for (const key in data) { const element = document.getElementById(key); if (element && data[key] !== null) { element.value = data[key]; } } } catch (err) { errorMessage.textContent = "Erreur: Fichier JSON invalide."; errorMessage.classList.remove('hidden'); } }; reader.readAsText(file); event.target.value = ''; }
+        
+        async function handleCalculate() {
+            calculateBtn.disabled = true;
+            welcomeMessage.classList.add('hidden');
+            resultDashboard.classList.add('hidden');
+            loaderContainer.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            const patientData = getFormData();
+
+            try {
+                const [predictResult, explainResult] = await Promise.all([
+                    fetch('http://127.0.0.1:8000/predict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patientData) }).then(res => res.ok ? res.json() : Promise.reject(res.json())),
+                    fetch('http://127.0.0.1:8000/explain', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patientData) }).then(res => res.ok ? res.json() : Promise.reject(res.json()))
+                ]);
+                displayResults(predictResult, explainResult);
+            } catch (errorPromise) {
+                const error = await (errorPromise.catch ? errorPromise.catch(e => e) : Promise.resolve(errorPromise));
+                errorMessage.textContent = `Erreur: ${error.detail || 'Le serveur a rencontré un problème.'}`;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                calculateBtn.disabled = false;
+                loaderContainer.classList.add('hidden');
+            }
+        }
+
+        function displayResults(predictData, explainData) {
+            const percentage = predictData.probability_of_ira * 100;
+            const isHighRisk = predictData.is_at_risk;
+
+            binaryResultText.textContent = isHighRisk ? "Oui" : "Non";
+            binaryResultCard.className = `p-6 rounded-xl text-center ${isHighRisk ? 'bg-red-100' : 'bg-green-100'}`;
+            binaryResultTitle.className = `text-lg font-medium ${isHighRisk ? 'text-red-800' : 'text-green-800'}`;
+            binaryResultText.className = `text-7xl font-bold ${isHighRisk ? 'text-red-600' : 'text-green-600'}`;
+
+            if (percentage > 50) {
+                clinicalContextText.innerHTML = "<b>Ce risque est significativement élevé.</b> L'initiation de mesures de néphroprotection est fortement recommandée.";
+            } else if (percentage > 30) {
+                clinicalContextText.innerHTML = "<b>Ce risque est supérieur à la moyenne.</b> Une surveillance post-opératoire attentive est conseillée.";
+            } else {
+                clinicalContextText.innerHTML = "<b>Ce risque est faible.</b> Poursuivre les soins standards tout en restant vigilant.";
+            }
+
+            renderRiskDial(percentage, isHighRisk);
+            renderWaterfallShapPlot(explainData, predictData.probability_of_ira);
+            
+            resultDashboard.classList.remove('hidden');
+            gsap.fromTo("#result-dashboard > *", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" });
+        }
+
+        function renderRiskDial(percentage, isHighRisk) {
+            const ctx = document.getElementById('riskDial').getContext('2d');
+            const riskColor = isHighRisk ? '#ef4444' : '#22c55e';
+            
+            if (riskDialInstance) riskDialInstance.destroy();
+
+            riskDialInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [percentage, 100 - percentage],
+                        backgroundColor: [riskColor, '#e2e8f0'],
+                        borderColor: '#fff',
+                        borderWidth: 5,
+                        circumference: 270,
+                        rotation: 225,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    aspectRatio: 1.5,
+                    cutout: '80%',
+                    plugins: { tooltip: { enabled: false } },
+                    animation: { animateRotate: true, duration: 1500 }
+                }
+            });
+            riskPercentage.style.color = riskColor;
+            gsap.fromTo(riskPercentage, { textContent: 0 }, { 
+                textContent: percentage.toFixed(1) + "%", 
+                duration: 1.5, 
+                ease: "power2.out",
+                snap: { textContent: 0.1 }
+            });
+        }
+
+        function renderWaterfallShapPlot(explainData, finalPrediction) {
+            const { shap_values, base_value } = explainData;
+            const sortedFeatures = Object.entries(shap_values).map(([name, value]) => ({ name, value })).filter(f => Math.abs(f.value) > 0.001).sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 10).reverse();
+            const ctx = document.getElementById('shapChart').getContext('2d');
+            if (shapChartInstance) shapChartInstance.destroy();
+
+            const data = [];
+            const labels = [];
+            const colors = [];
+            let current_total = base_value;
+
+            labels.push('Risque de base');
+            data.push([0, base_value]);
+            colors.push('rgba(100, 116, 139, 0.7)');
+
+            sortedFeatures.forEach(feature => {
+                labels.push(featureLabelMap[feature.name] || feature.name);
+                data.push([current_total, current_total + feature.value]);
+                colors.push(feature.value > 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)');
+                current_total += feature.value;
+            });
+            
+            labels.push('Score final');
+            data.push([0, finalPrediction]);
+            colors.push('rgba(59, 130, 246, 0.8)');
+
+            shapChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, barPercentage: 0.8 }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataIndex === 0) return `Valeur de base: ${context.raw[1].toFixed(4)}`;
+                                    if (context.dataIndex === context.chart.data.labels.length - 1) return `Prédiction finale: ${context.raw[1].toFixed(4)}`;
+                                    const shapValue = context.raw[1] - context.raw[0];
+                                    return `Impact (SHAP): ${shapValue.toFixed(4)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Probabilité de risque (score du modèle)' } },
+                        y: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        
+        createForm();
+        calculateBtn.addEventListener('click', handleCalculate);
+        resetBtn.addEventListener('click', resetForm);
+        saveBtn.addEventListener('click', saveCase);
+        loadInput.addEventListener('change', loadCase);
+    });
+    </script>
+</body>
+</html>

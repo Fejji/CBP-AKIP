@@ -1,0 +1,385 @@
+{
+    "selected_features_initial": [
+        "Age",
+        "Sexe",
+        "IMC",
+        "Diabète",
+        "HTA",
+        "IRC",
+        "FEVG_pré",
+        "NYHA",
+        "ASA",
+        "Euroscore",
+        "Créat_pré",
+        "Clairance_pré",
+        "Hb_pré",
+        "Chir",
+        "Urg",
+        "Redux",
+        "Durée_CEC",
+        "Durée_clamp",
+        "PAM_CEC",
+        "CGR_per",
+        "Lac_fin",
+        "NAD_fin",
+        "Dobu_fin",
+        "PFC_per",
+        "CPS_per",
+        "SCA_pré",
+        "AVC_pré",
+        "BPCO",
+        "IH",
+        "Tabagisme",
+        "pH_0",
+        "Ht_0",
+        "PAPS_pré",
+        "Ht_pré"
+    ],
+    "feature_value_maps": {
+        "Sexe": {
+            "values": [
+                1.0,
+                2.0
+            ],
+            "labels": [
+                "Mâle",
+                "Femelle"
+            ],
+            "default_display": "Mâle"
+        },
+        "Diabète": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "HTA": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "IRC": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "NYHA": {
+            "values": [
+                1.0,
+                2.0,
+                3.0,
+                4.0
+            ],
+            "labels": [
+                "NYHA 1",
+                "NYHA 2",
+                "NYHA 3",
+                "NYHA 4"
+            ],
+            "default_display": "NYHA 1"
+        },
+        "ASA": {
+            "values": [
+                1.0,
+                2.0,
+                3.0,
+                4.0,
+                5.0
+            ],
+            "labels": [
+                "ASA 1",
+                "ASA 2",
+                "ASA 3",
+                "ASA 4",
+                "ASA 5"
+            ],
+            "default_display": "ASA 1"
+        },
+        "Urg": {
+            "values": [
+                1.0,
+                2.0
+            ],
+            "labels": [
+                "Programmée",
+                "Urgente"
+            ],
+            "default_display": "Programmée"
+        },
+        "Redux": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "Chir": {
+            "values": [
+                1.0,
+                2.0,
+                3.0,
+                4.0,
+                5.0,
+                6.0,
+                7.0,
+                8.0,
+                9.0,
+                10.0,
+                11.0,
+                12.0,
+                13.0,
+                14.0,
+                15.0,
+                16.0,
+                17.0
+            ],
+            "labels": [
+                "Pontage aorto-coronaire",
+                "Remplacement valvulaire aortique",
+                "Remplacement valvulaire mitral",
+                "Anneau mitral",
+                "Plastie mitrale",
+                "Anneau tricuspide",
+                "Rempalcement valvualire tricuspide",
+                "Bentall",
+                "Tirone David",
+                "Tube aortique",
+                "Congénitale",
+                "Tumeur cardiaque",
+                "Combinée - 1 procédure hors PAC",
+                "Combinée - 2 procédures",
+                "Combinée - 3 procédures",
+                "Combinée - 4 procédures",
+                "Autre"
+            ],
+            "default_display": "Pontage aorto-coronaire"
+        },
+        "SCA_pré": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "AVC_pré": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "BPCO": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "IH": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        },
+        "Tabagisme": {
+            "values": [
+                0.0,
+                1.0
+            ],
+            "labels": [
+                "Non",
+                "Oui"
+            ],
+            "default_display": "Non"
+        }
+    },
+    "X_train_dtypes": {
+        "Age": "float64",
+        "Sexe": "float64",
+        "IMC": "float64",
+        "Diabète": "float64",
+        "HTA": "float64",
+        "IRC": "float64",
+        "FEVG_pré": "float64",
+        "NYHA": "float64",
+        "ASA": "float64",
+        "Euroscore": "float64",
+        "Créat_pré": "float64",
+        "Clairance_pré": "float64",
+        "Hb_pré": "float64",
+        "Chir": "float64",
+        "Urg": "float64",
+        "Redux": "float64",
+        "Durée_CEC": "float64",
+        "Durée_clamp": "float64",
+        "PAM_CEC": "float64",
+        "CGR_per": "float64",
+        "Lac_fin": "float64",
+        "NAD_fin": "float64",
+        "Dobu_fin": "float64",
+        "PFC_per": "float64",
+        "CPS_per": "float64",
+        "SCA_pré": "float64",
+        "AVC_pré": "float64",
+        "BPCO": "float64",
+        "IH": "float64",
+        "Tabagisme": "float64",
+        "pH_0": "float64",
+        "Ht_0": "float64",
+        "PAPS_pré": "float64",
+        "Ht_pré": "float64"
+    },
+    "optimal_threshold_youden": 0.2714809000523286,
+    "variable_labels_map": {
+        "Année": " Année au cours de laquelle l'intervention a été réalisée",
+        "Numéro": "Numéro du dossier",
+        "Sexe": "Sexe du patient",
+        "Age": "Age du patient (années)",
+        "Poids": "Poids (kg)",
+        "Taille": "Taille (cm)",
+        "IMC": "IMC (kg/m2)",
+        "Surface": "Surface corporelle (m2)",
+        "ASA": "Classe ASA",
+        "NYHA": "Classe NYHA",
+        "Euroscore": "Euroscore II",
+        "Diabète": "Antécédent personnel de diabète",
+        "HTA": "Antécédent personnel d'hypertension artérielle",
+        "IRC": "Antécédent personnel d'insuffisance rénale chronique",
+        "SCA_pré": "Antécédent personnel de syndrome coronarien aigu",
+        "AVC_pré": "Antécédent personnel d'accident vasculaire cérébral",
+        "IH": "Antécédent personnel d'insuffisance hépatique",
+        "BPCO": "Antécédent personnel de BPCO",
+        "Tabagisme": "Antécédent personnel de tabagisme",
+        "PA": "Nombre de paquets-années",
+        "Lévo": "Lévosimendan préopératoire",
+        "Durée_Lévo": "Durée d’administration de Lévosimendan",
+        "Créat_pré": "Créatinine préopératoire (µmol/l)",
+        "Clairance_pré": "Clairance de la créatinine indexée préopératoire (ml/min/1,73m2)",
+        "Hb_pré": "Hémoglobine préopératoire (g/dl)",
+        "Ht_pré": "Hématocrite préopératoire (%)",
+        "Prot_pré": "Protides préopératoire (g/l)",
+        "Alb_pré": "Albuminémie préopératoire (g/l)",
+        "Chir": "Type de chirurgie",
+        "Urg": "Degré d’urgence",
+        "Redux": "Redux",
+        "Durée_interv": "Durée de l’intervention (min)",
+        "Durée_CEC": "Durée de CEC (min)",
+        "Durée_clamp": "Durée de clampage aortique (min)",
+        "Durée_assist": "Durée d'assistance (min)",
+        "Débit_moy": "Débit moyen per CEC (ml/min)",
+        "PAM_CEC": "PAM moyenne per CEC (mmHg)",
+        "HF_CEC": "Hémofiltration per CEC",
+        "HF_Volume": "Volume ultrafiltré (ml)",
+        "Priming": "Volume du priming (ml)",
+        "Héparine": "Dose totale d’héparine (mg)",
+        "ACT_max": "ACT max (s)",
+        "Protamine": "Protamine (mg)",
+        "ACT_post": "ACT après protamine (s)",
+        "Hypno_ent": "Hypnotique utilisé pour entretien d'anesthésie en peropératoire",
+        "Morph_type": "Morphinique utilisé en peropératoire",
+        "Morph_tot": "Dose totale de morphinique utilisé en peropératoire",
+        "Curare_type": "Curare utilisé en peropératoire",
+        "Curare_tot": "Dose totale de curare utilisé en peropératoire",
+        "Corti": "Corticothérapie en périopératoire",
+        "Corti_molécule": "Molécule utilisée pour la corticothérapie périopératoire",
+        "Corti_dose": "Dose de corticothérapie périopératoire",
+        "Durée_corti": "Durée de corticothérapie périopératoire",
+        "Antibioprophylaxie": "Antibioprophylaxie utilisée en périopératoire",
+        "Durée_Antibiophy": "Durée d'antibioprophylaxie utilisée en périopératoire",
+        "NAD_fin": "Noradrénaline fin de CEC (mg/h)",
+        "Dobu_fin": "Dobutamine fin de CEC (gamma/kg/min)",
+        "Lac_fin": "Lactates fin de CEC (mmol/l)",
+        "NAD_48": "Dose cumulée de noradrénaline dans les 48 premières heures (mg)",
+        "ECLS": "ECLS",
+        "Temp_0": "Température à l’admission en réanimation (°C)",
+        "pH_0": "pH à l’admission en réanimation",
+        "Lac_0": "Lactates à l’admission en réanimation (mmol/l)",
+        "Ht_0": "Hématocrite à l’admission en réanimation (%)",
+        "Fib_0": "Fibrinogène à l’admission en réanimation (g/l)",
+        "PF_0": "PaO2/FiO2 à l’admission en réanimation",
+        "Prot_0": "Protides à l’admission en réanimation (g/l)",
+        "TP_0": "TP à l’admission en réanimation (%)",
+        "Trop_0": "Troponine h0 (ng/l)",
+        "Trop_6": "Troponine h6 (ng/l)",
+        "Trop_24": "Troponine J1 (ng/l)",
+        "Trop_48": "Troponine J2 (ng/l)",
+        "Trop_72": "Troponine J3 (ng/l)",
+        "Durée_VM": "Durée de VM (h)",
+        "J_Réa": "Jours de réanimation",
+        "Séjour": "Durée de séjour intrahospitalière (j)",
+        "J_Drain": "Jours de drainage",
+        "Vol_Drain": "Volume de drainage (ml)",
+        "Catéchol_Sev": "Délai de sevrage des catécholamines (h)",
+        "CGR_per": "Nombre de CGR transfusés en peropératoire",
+        "PFC_per": "Nombre de PFC transfusés en peropératoire",
+        "CPS_per": "Nombre de CPS transfusés en peropératoire",
+        "CGR_tot": "Nombre total de CGR transfusés en périopératoire",
+        "PFC_tot": "Nombre total de PFC transfusés en périopératoire",
+        "CPS_tot": "Nombre total de CPS transfusés en périopératoire",
+        "Cellsaver": "Utilisation de Cellsaver en peropératoire",
+        "Cellsaver_Vol": "Volume de sang récupéré par Cellsaver transfusé",
+        "Morph_24": "Dose cumulée sur les premières 24h",
+        "Morph_Délai": "Délai de recours à la morphine (h)",
+        "Bloc": "Bloc parasternal",
+        "APD": "Péridurale thoracique",
+        "Rachi": "Rachimorphine",
+        "Néph_tox": "Utilisation de médicaments néphrotoxiques",
+        "ACR": "ACR récupéré",
+        "TSV": "TSV",
+        "SCA_post": "SCA postopératoire",
+        "Réintub": "Réintubation",
+        "Trachéo": "Trachéotomie",
+        "VNI": "VNI postopératoire",
+        "PNP": "Pneumopathie postopératoire",
+        "IRA": "IRA postopératoire",
+        "KDIGO": "KDIGO",
+        "EER": "Recours à l'EER",
+        "EER_mod": "Modalités d'EER",
+        "Médiastinite": "Médiastinite postopératoire",
+        "AVC_post": "AVC postopératoire",
+        "Reprise": "Reprise chirurgicale",
+        "Décès": "Décès au CHU",
+        "FEVG_pré": "FEVG préopératoire (%)",
+        "PAPS_pré": "PAPS préopératoire (mmHg)",
+        "FEVG_post": "FEVG postopératoire (%)",
+        "PAPS_post": "PAPS postopératoire (mmHg)"
+    }
+}
