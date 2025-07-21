@@ -1,4 +1,4 @@
-# Fichier requirements.txt final pour Render
+# Fichier requirements.txt final (v2)
 
 # --- Framework Web ---
 fastapi
@@ -10,10 +10,8 @@ python-multipart
 pandas==2.3.0
 numpy==1.26.4
 scikit-learn==1.5.1
-imbalanced-learn==0.12.3
+imbalanced-learn
 xgboost==3.0.0
 shap==0.47.2
-joblib==1.4.2
-
-# Note : J'ai déduit les versions pour imbalanced-learn et joblib
-# en me basant sur les versions compatibles avec vos autres paquets.
+joblib
+lightgbm==4.6.0
