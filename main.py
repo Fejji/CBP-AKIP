@@ -1,4 +1,4 @@
-# main.py (Version finale corrigée)
+# main.py (Version de TEST pour la mémoire - SHAP désactivé)
 
 import sys
 import joblib
@@ -6,37 +6,33 @@ import json
 import logging
 import pandas as pd
 import numpy as np
-import shap
+# import shap # DÉSACTIVÉ TEMPORAIREMENT
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse 
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
-# --- Importations et configuration initiales ---
 from custom_objects import RobustSelectFromModel
 sys.modules['__main__'].RobustSelectFromModel = RobustSelectFromModel
 
 MODEL_PATH = "aki_hybrid_model_final.joblib"
 METADATA_PATH = "aki_hybrid_metadata_final.json"
-SHAP_BACKGROUND_PATH = "aki_hybrid_shap_background_final.joblib"
+# SHAP_BACKGROUND_PATH = "aki_hybrid_shap_background_final.joblib" # DÉSACTIVÉ TEMPORAIREMENT
 
-# --- Variables Globales ---
 model_pipeline = None
 metadata = {}
-shap_explainer = None
+# shap_explainer = None # DÉSACTIVÉ TEMPORAIREMENT
 feature_names_in_order = []
 
 logging.basicConfig(level=logging.INFO)
 
-# --- Création de l'application FastAPI ---
 app = FastAPI(
     title="CPB-AKIP Score API",
     description="API pour prédire le risque d'Insuffisance Rénale Aiguë post-opératoire.",
     version="1.0.0"
 )
 
-# --- Middleware CORS ---
 origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
@@ -46,10 +42,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Événement de démarrage ---
 @app.on_event("startup")
 def load_resources():
-    global model_pipeline, metadata, shap_explainer, feature_names_in_order
+    global model_pipeline, metadata, feature_names_in_order #, shap_explainer # DÉSACTIVÉ
     try:
         logging.info("Chargement du pipeline de modèle...")
         model_pipeline = joblib.load(MODEL_PATH)
@@ -60,29 +55,23 @@ def load_resources():
         
         feature_names_in_order = metadata.get('selected_features_final', [])
         if not feature_names_in_order:
-            raise ValueError("La liste des caractéristiques ('selected_features_final') est vide ou non trouvée dans les métadonnées.")
+            raise ValueError("La liste des caractéristiques ('selected_features_final') est vide ou non trouvée.")
 
-        logging.info("Chargement des données d'arrière-plan pour SHAP...")
-        background_data_joblib = joblib.load(SHAP_BACKGROUND_PATH)
-        background_df = pd.DataFrame(background_data_joblib, columns=feature_names_in_order)
+        # --- SECTION SHAP DÉSACTIVÉE ---
+        # logging.info("Chargement des données d'arrière-plan pour SHAP...")
+        # background_data_joblib = joblib.load(SHAP_BACKGROUND_PATH)
+        # background_df = pd.DataFrame(background_data_joblib, columns=feature_names_in_order)
+        #
+        # logging.info("Initialisation de l'explainer SHAP...")
+        # predict_fn = lambda x: model_pipeline.predict_proba(pd.DataFrame(x, columns=feature_names_in_order))[:, 1]
+        # shap_explainer = shap.KernelExplainer(predict_fn, background_df)
         
-        logging.info("Initialisation de l'explainer SHAP...")
-        
-        # =================================================================
-        # CORRECTION FINALE : On recrée le DataFrame à l'intérieur de la fonction lambda
-        # pour satisfaire le pipeline scikit-learn.
-        # =================================================================
-        predict_fn = lambda x: model_pipeline.predict_proba(pd.DataFrame(x, columns=feature_names_in_order))[:, 1]
-        
-        shap_explainer = shap.KernelExplainer(predict_fn, background_df)
-        
-        logging.info("Ressources chargées avec succès.")
+        logging.info("Ressources (SANS SHAP) chargées avec succès.")
 
     except Exception as e:
         logging.error(f"Erreur lors du chargement des ressources : {e}")
         raise
 
-# --- Modèle de données Pydantic ---
 class PatientInput(BaseModel):
     Age: Optional[float] = None; Sexe: Optional[float] = None; IMC: Optional[float] = None
     Diabete: Optional[float] = Field(None, alias='Diabète'); HTA: Optional[float] = None
@@ -102,24 +91,18 @@ class PatientInput(BaseModel):
     class Config:
         anystr_strip_whitespace = True
 
-# --- Route pour la page d'accueil ---
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse('index.html')
 
-# --- Endpoints de l'API ---
-@app.get("/health", summary="Vérifier l'état de santé de l'API")
-def health_check():
-    return {"status": "ok", "model_loaded": model_pipeline is not None}
-    
-@app.get("/metadata", summary="Obtenir les métadonnées (valeurs de formulaire, etc.)")
+@app.get("/metadata", summary="Obtenir les métadonnées")
 def get_metadata():
     return {
         "feature_value_maps": metadata.get("feature_value_maps"),
         "numerical_ranges": metadata.get("numerical_ranges")
     }
 
-@app.post("/predict", summary="Prédire le risque d'IRA pour un patient")
+@app.post("/predict", summary="Prédire le risque d'IRA")
 def predict_risk(patient_data: PatientInput) -> Dict[str, Any]:
     if not model_pipeline: raise HTTPException(status_code=503, detail="Le modèle n'est pas chargé.")
     try:
@@ -132,18 +115,8 @@ def predict_risk(patient_data: PatientInput) -> Dict[str, Any]:
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/explain", summary="Expliquer une prédiction unique (locale) avec valeur de base")
-def explain_prediction(patient_data: PatientInput) -> Dict[str, Any]:
-    if not shap_explainer: raise HTTPException(status_code=503, detail="L'explainer SHAP n'est pas chargé.")
-    try:
-        patient_df = pd.DataFrame([patient_data.dict(by_alias=True)], columns=feature_names_in_order)
-        patient_df.replace({None: np.nan}, inplace=True)
-        
-        shap_values = shap_explainer.shap_values(patient_df).flatten()
-        base_value = shap_explainer.expected_value
-        
-        explanation = {feature: round(value, 4) for feature, value in zip(feature_names_in_order, shap_values)}
-        
-        return {"base_value": round(base_value, 4), "shap_values": explanation}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+# --- Endpoint /explain DÉSACTIVÉ ---
+# @app.post("/explain", summary="Expliquer une prédiction")
+# def explain_prediction(patient_data: PatientInput) -> Dict[str, Any]:
+#     if not shap_explainer: raise HTTPException(status_code=503, detail="L'explainer SHAP n'est pas chargé.")
+#     # ... code de l'explication ...
