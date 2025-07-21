@@ -1,4 +1,4 @@
-# main.py (Version corrigée pour le déploiement sur Render)
+# main.py (Version finale corrigée)
 
 import sys
 import joblib
@@ -9,14 +9,12 @@ import numpy as np
 import shap
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-# NOUVELLE IMPORTATION
 from fastapi.responses import FileResponse 
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
 # --- Importations et configuration initiales ---
 from custom_objects import RobustSelectFromModel
-# Astuce pour permettre à joblib de trouver la classe personnalisée lors du chargement
 sys.modules['__main__'].RobustSelectFromModel = RobustSelectFromModel
 
 MODEL_PATH = "aki_hybrid_model_final.joblib"
@@ -39,8 +37,7 @@ app = FastAPI(
 )
 
 # --- Middleware CORS ---
-# Permet à votre frontend (même s'il est servi par une autre origine) de communiquer avec l'API.
-origins = ["*"]  # Ou spécifiez les domaines autorisés
+origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -50,13 +47,13 @@ app.add_middleware(
 )
 
 # --- Événement de démarrage ---
-# Charge les modèles et métadonnées une seule fois au lancement de l'application.
 @app.on_event("startup")
 def load_resources():
     global model_pipeline, metadata, shap_explainer, feature_names_in_order
     try:
         logging.info("Chargement du pipeline de modèle...")
         model_pipeline = joblib.load(MODEL_PATH)
+        
         logging.info("Chargement des métadonnées...")
         with open(METADATA_PATH, 'r', encoding='utf-8') as f:
             metadata = json.load(f)
@@ -70,20 +67,22 @@ def load_resources():
         background_df = pd.DataFrame(background_data_joblib, columns=feature_names_in_order)
         
         logging.info("Initialisation de l'explainer SHAP...")
-        # On utilise la fonction de prédiction de probabilité du modèle
-        predict_fn = lambda x: model_pipeline.predict_proba(x)[:, 1]
+        
+        # =================================================================
+        # CORRECTION FINALE : On recrée le DataFrame à l'intérieur de la fonction lambda
+        # pour satisfaire le pipeline scikit-learn.
+        # =================================================================
+        predict_fn = lambda x: model_pipeline.predict_proba(pd.DataFrame(x, columns=feature_names_in_order))[:, 1]
+        
         shap_explainer = shap.KernelExplainer(predict_fn, background_df)
         
         logging.info("Ressources chargées avec succès.")
 
-    except FileNotFoundError as e:
-        logging.error(f"Fichier non trouvé : {e}. Assurez-vous que les fichiers de modèle, métadonnées et SHAP sont présents.")
-        raise
     except Exception as e:
         logging.error(f"Erreur lors du chargement des ressources : {e}")
         raise
 
-# --- Modèle de données Pydantic pour l'entrée ---
+# --- Modèle de données Pydantic ---
 class PatientInput(BaseModel):
     Age: Optional[float] = None; Sexe: Optional[float] = None; IMC: Optional[float] = None
     Diabete: Optional[float] = Field(None, alias='Diabète'); HTA: Optional[float] = None
@@ -102,18 +101,13 @@ class PatientInput(BaseModel):
 
     class Config:
         anystr_strip_whitespace = True
-        
-# =================================================================
-# NOUVELLE ROUTE POUR SERVIR LA PAGE D'ACCUEIL (index.html)
-# =================================================================
+
+# --- Route pour la page d'accueil ---
 @app.get("/", include_in_schema=False)
 async def root():
     return FileResponse('index.html')
-# =================================================================
-
 
 # --- Endpoints de l'API ---
-
 @app.get("/health", summary="Vérifier l'état de santé de l'API")
 def health_check():
     return {"status": "ok", "model_loaded": model_pipeline is not None}
@@ -146,8 +140,6 @@ def explain_prediction(patient_data: PatientInput) -> Dict[str, Any]:
         patient_df.replace({None: np.nan}, inplace=True)
         
         shap_values = shap_explainer.shap_values(patient_df).flatten()
-        
-        # On retourne aussi la valeur de base de l'explainer
         base_value = shap_explainer.expected_value
         
         explanation = {feature: round(value, 4) for feature, value in zip(feature_names_in_order, shap_values)}
