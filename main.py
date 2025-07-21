@@ -1,4 +1,4 @@
-# main.py (Version finale pour graphique en cascade)
+# main.py (Version corrigée pour le déploiement sur Render)
 
 import sys
 import joblib
@@ -9,11 +9,14 @@ import numpy as np
 import shap
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+# NOUVELLE IMPORTATION
+from fastapi.responses import FileResponse 
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
 # --- Importations et configuration initiales ---
 from custom_objects import RobustSelectFromModel
+# Astuce pour permettre à joblib de trouver la classe personnalisée lors du chargement
 sys.modules['__main__'].RobustSelectFromModel = RobustSelectFromModel
 
 MODEL_PATH = "aki_hybrid_model_final.joblib"
@@ -28,61 +31,102 @@ feature_names_in_order = []
 
 logging.basicConfig(level=logging.INFO)
 
+# --- Création de l'application FastAPI ---
+app = FastAPI(
+    title="CPB-AKIP Score API",
+    description="API pour prédire le risque d'Insuffisance Rénale Aiguë post-opératoire.",
+    version="1.0.0"
+)
+
+# --- Middleware CORS ---
+# Permet à votre frontend (même s'il est servi par une autre origine) de communiquer avec l'API.
+origins = ["*"]  # Ou spécifiez les domaines autorisés
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- Événement de démarrage ---
+# Charge les modèles et métadonnées une seule fois au lancement de l'application.
+@app.on_event("startup")
+def load_resources():
+    global model_pipeline, metadata, shap_explainer, feature_names_in_order
+    try:
+        logging.info("Chargement du pipeline de modèle...")
+        model_pipeline = joblib.load(MODEL_PATH)
+        logging.info("Chargement des métadonnées...")
+        with open(METADATA_PATH, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+        
+        feature_names_in_order = metadata.get('selected_features_final', [])
+        if not feature_names_in_order:
+            raise ValueError("La liste des caractéristiques ('selected_features_final') est vide ou non trouvée dans les métadonnées.")
+
+        logging.info("Chargement des données d'arrière-plan pour SHAP...")
+        background_data_joblib = joblib.load(SHAP_BACKGROUND_PATH)
+        background_df = pd.DataFrame(background_data_joblib, columns=feature_names_in_order)
+        
+        logging.info("Initialisation de l'explainer SHAP...")
+        # On utilise la fonction de prédiction de probabilité du modèle
+        predict_fn = lambda x: model_pipeline.predict_proba(x)[:, 1]
+        shap_explainer = shap.KernelExplainer(predict_fn, background_df)
+        
+        logging.info("Ressources chargées avec succès.")
+
+    except FileNotFoundError as e:
+        logging.error(f"Fichier non trouvé : {e}. Assurez-vous que les fichiers de modèle, métadonnées et SHAP sont présents.")
+        raise
+    except Exception as e:
+        logging.error(f"Erreur lors du chargement des ressources : {e}")
+        raise
+
+# --- Modèle de données Pydantic pour l'entrée ---
 class PatientInput(BaseModel):
     Age: Optional[float] = None; Sexe: Optional[float] = None; IMC: Optional[float] = None
     Diabete: Optional[float] = Field(None, alias='Diabète'); HTA: Optional[float] = None
     IRC: Optional[float] = None; FEVG_pre: Optional[float] = Field(None, alias='FEVG_pré')
     NYHA: Optional[float] = None; ASA: Optional[float] = None; Euroscore: Optional[float] = None
-    Creat_pre: Optional[float] = Field(None, alias='Créat_pré')
-    Clairance_pre: Optional[float] = Field(None, alias='Clairance_pré')
+    Creat_pre: Optional[float] = Field(None, alias='Créat_pré'); Clairance_pre: Optional[float] = Field(None, alias='Clairance_pré')
     Hb_pre: Optional[float] = Field(None, alias='Hb_pré'); Chir: Optional[float] = None
     Urg: Optional[float] = None; Redux: Optional[float] = None
-    Duree_CEC: Optional[float] = Field(None, alias='Durée_CEC')
-    Duree_clamp: Optional[float] = Field(None, alias='Durée_clamp'); PAM_CEC: Optional[float] = None
-    CGR_per: Optional[float] = None; Lac_fin: Optional[float] = None
-    NAD_fin: Optional[float] = None; Dobu_fin: Optional[float] = None
-    PFC_per: Optional[float] = None; CPS_per: Optional[float] = None
-    SCA_pre: Optional[float] = Field(None, alias='SCA_pré')
+    Duree_CEC: Optional[float] = Field(None, alias='Durée_CEC'); Duree_clamp: Optional[float] = Field(None, alias='Durée_clamp')
+    PAM_CEC: Optional[float] = None; CGR_per: Optional[float] = None; Lac_fin: Optional[float] = None
+    NAD_fin: Optional[float] = None; Dobu_fin: Optional[float] = None; PFC_per: Optional[float] = None
+    CPS_per: Optional[float] = None; SCA_pre: Optional[float] = Field(None, alias='SCA_pré')
     AVC_pre: Optional[float] = Field(None, alias='AVC_pré'); BPCO: Optional[float] = None
     IH: Optional[float] = None; Tabagisme: Optional[float] = None; pH_0: Optional[float] = None
-    Ht_0: Optional[float] = None; PAPS_pre: Optional[float] = Field(None, alias='PAPS_pré')
-    Ht_pre: Optional[float] = Field(None, alias='Ht_pré')
+    Ht_0: Optional[float] = None; PAPS_pre: Optional[float] = Field(None, alias='PAPS_pré'); Ht_pre: Optional[float] = Field(None, alias='Ht_pré')
 
-app = FastAPI(title="API de Prédiction du Risque d'IRA", version="14.0.0 (Waterfall Plot)")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
-@app.on_event("startup")
-def load_artifacts():
-    global model_pipeline, metadata, shap_explainer, feature_names_in_order
-    logging.info("--- Démarrage de l'API : Chargement des artefacts... ---")
-    try:
-        with open(METADATA_PATH, 'r', encoding='utf-8') as f:
-            metadata = json.load(f)
-        feature_names_in_order = metadata.get('selected_features_initial', [])
+    class Config:
+        anystr_strip_whitespace = True
         
-        model_pipeline = joblib.load(MODEL_PATH)
-        logging.info("Modèle de prédiction principal chargé.")
-        
-        stacker = model_pipeline.estimator
-        rf_pipeline_for_shap = stacker.estimators_[1]
-        
-        background_data_np = joblib.load(SHAP_BACKGROUND_PATH)
+# =================================================================
+# NOUVELLE ROUTE POUR SERVIR LA PAGE D'ACCUEIL (index.html)
+# =================================================================
+@app.get("/", include_in_schema=False)
+async def root():
+    return FileResponse('index.html')
+# =================================================================
 
-        def rf_predict_proba_for_shap(data):
-            df = pd.DataFrame(data, columns=feature_names_in_order)
-            return rf_pipeline_for_shap.predict_proba(df)[:, 1]
 
-        shap_explainer = shap.KernelExplainer(rf_predict_proba_for_shap, background_data_np)
-        logging.info("Explainer SHAP (local) configuré avec succès.")
+# --- Endpoints de l'API ---
 
-    except Exception as e:
-        logging.error(f"--- ERREUR CRITIQUE AU DÉMARRAGE --- : {e}", exc_info=True)
-        raise e
-
-# --- Endpoints ---
+@app.get("/health", summary="Vérifier l'état de santé de l'API")
+def health_check():
+    return {"status": "ok", "model_loaded": model_pipeline is not None}
+    
+@app.get("/metadata", summary="Obtenir les métadonnées (valeurs de formulaire, etc.)")
+def get_metadata():
+    return {
+        "feature_value_maps": metadata.get("feature_value_maps"),
+        "numerical_ranges": metadata.get("numerical_ranges")
+    }
 
 @app.post("/predict", summary="Prédire le risque d'IRA pour un patient")
-def predict_aki(patient_data: PatientInput):
+def predict_risk(patient_data: PatientInput) -> Dict[str, Any]:
     if not model_pipeline: raise HTTPException(status_code=503, detail="Le modèle n'est pas chargé.")
     try:
         patient_df = pd.DataFrame([patient_data.dict(by_alias=True)], columns=feature_names_in_order)
@@ -103,14 +147,11 @@ def explain_prediction(patient_data: PatientInput) -> Dict[str, Any]:
         
         shap_values = shap_explainer.shap_values(patient_df).flatten()
         
-        # MISE À JOUR : On retourne aussi la valeur de base de l'explainer
+        # On retourne aussi la valeur de base de l'explainer
         base_value = shap_explainer.expected_value
         
         explanation = {feature: round(value, 4) for feature, value in zip(feature_names_in_order, shap_values)}
         
-        return {
-            "shap_values": explanation,
-            "base_value": float(base_value)
-        }
+        return {"base_value": round(base_value, 4), "shap_values": explanation}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
