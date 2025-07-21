@@ -8,3 +8,5 @@ joblib
 shap
 gunicorn
 imbalanced-learn
+xgboost
+lightgbm
