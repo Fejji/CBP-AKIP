@@ -1,12 +1,19 @@
+# Fichier requirements.txt final pour Render
+
+# --- Framework Web ---
 fastapi
+gunicorn
 uvicorn[standard]
 python-multipart
+
+# --- Librairies de Machine Learning (versions exactes de votre PC) ---
+pandas==2.3.0
+numpy==1.26.4
 scikit-learn==1.5.1
-pandas
-numpy
-joblib
-shap
-gunicorn
-imbalanced-learn
-xgboost
-lightgbm
+imbalanced-learn==0.12.3
+xgboost==3.0.0
+shap==0.47.2
+joblib==1.4.2
+
+# Note : J'ai déduit les versions pour imbalanced-learn et joblib
+# en me basant sur les versions compatibles avec vos autres paquets.
